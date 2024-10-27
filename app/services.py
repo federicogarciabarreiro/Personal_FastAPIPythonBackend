@@ -66,6 +66,7 @@ async def register_user(email: str, password: str, user_name: str):
         logging.error(f"Error inesperado: {str(e)}")
         return {"error": "Error inesperado. Verifique tamaño de la contraseña o correo electrónico."}
 
+
 async def login_user(email: str, password: str):
     if not is_valid_email(email):
         return {"error": "El formato del correo electrónico es inválido."}
