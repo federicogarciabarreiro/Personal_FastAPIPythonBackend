@@ -13,7 +13,6 @@ def is_valid_email(email: str) -> bool:
     return re.match(pattern, email) is not None
 
 async def register_user(email: str, password: str, user_name: str):
-
     if not is_valid_email(email):
         return {"error": "El formato del correo electrónico es inválido."}
 
@@ -24,8 +23,20 @@ async def register_user(email: str, password: str, user_name: str):
         response = supabase.auth.sign_up({"email": email, "password": password})
 
         if response.user:
+            user_id = response.user.id
             access_token = response.session.access_token
             refresh_token = response.session.refresh_token
+
+            user_data = {
+                "user_id": user_id,
+                "user_name": user_name,
+                "user_email": email
+            }
+            insert_response = await insert_data("users", user_data)
+            if insert_response.get("status") == "error":
+                logging.error(f"Error al insertar el usuario en la tabla: {insert_response['message']}")
+                return {"error": "Error al guardar los datos del usuario."}
+
             user_info = {
                 "email": email,
                 "user_name": user_name,
@@ -48,7 +59,6 @@ async def register_user(email: str, password: str, user_name: str):
         logging.error(f"Error inesperado: {str(e)}")
         return {"error": "Error inesperado. Verifique tamaño de la contraseña o correo electrónico."}
 
-
 async def login_user(email: str, password: str):
     if not is_valid_email(email):
         return {"error": "El formato del correo electrónico es inválido."}
@@ -64,11 +74,20 @@ async def login_user(email: str, password: str):
 
         if response.user:
             access_token = response.session.access_token
+            user_id = response.user.id 
+            
+            user_data_response = await select_data("users", "user_id", user_id)
+
+            if user_data_response["status"] == "error":
+                return {"error": "Error al obtener datos del usuario."}
+            
+            user_info = user_data_response["data"][0] if user_data_response["data"] else {}
+            
             return {
                 "message": "Inicio de sesión exitoso",
                 "user": {
                     "email": response.user.email,
-                    "user_name": response.user.user_metadata.get("user_name"),
+                    "user_name": user_info.get("user_name"),
                     "access_token": access_token,
                 }
             }
@@ -77,6 +96,7 @@ async def login_user(email: str, password: str):
     except Exception as e:
         logging.error(f"Error inesperado en inicio de sesión: {str(e)}")
         return {"error": "Error en inicio de sesión."}
+
 
 
 async def select_data(table: str, column: str, value: str):

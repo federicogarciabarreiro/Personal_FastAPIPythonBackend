@@ -1,5 +1,5 @@
 valid_tables = {
-    'users': ['user_name', 'user_email']
+    'users': ['user_id','user_name', 'user_email']
 }
 
 def is_valid_table(table: str) -> bool:
