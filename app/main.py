@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from app.routers import router as api_router
+from .routers import router as api_router
 
 app = FastAPI()
 
@@ -8,4 +8,4 @@ app = FastAPI()
 async def root():
     return RedirectResponse(url="/docs")
 
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="")

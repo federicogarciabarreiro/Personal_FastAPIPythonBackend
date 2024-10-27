@@ -20,21 +20,28 @@ async def register_user(email: str, password: str, user_name: str):
         return {"error": "La contraseña debe tener exactamente 6 caracteres."}
 
     try:
+        print("Intentando registrar el usuario...")
         response = supabase.auth.sign_up({"email": email, "password": password})
+
+        print(f"Respuesta de registro: {response}")
 
         if response.user:
             user_id = response.user.id
-            access_token = response.session.access_token
-            refresh_token = response.session.refresh_token
+            
+            access_token = response.session.access_token if response.session else None
+            refresh_token = response.session.refresh_token if response.session else None
 
             user_data = {
                 "user_id": user_id,
                 "user_name": user_name,
                 "user_email": email
             }
+
+            print(f"Inserción de datos del usuario: {user_data}")
             insert_response = await insert_data("users", user_data)
-            if insert_response.get("status") == "error":
-                logging.error(f"Error al insertar el usuario en la tabla: {insert_response['message']}")
+
+            if insert_response["status"] == "error":
+                logging.error(f"Error al insertar el usuario en la tabla: {insert_response.get('message', 'No se proporcionó mensaje')}")
                 return {"error": "Error al guardar los datos del usuario."}
 
             user_info = {
@@ -122,22 +129,27 @@ async def select_data(table: str, column: str, value: str):
         "data": response.data
     }
 
+
 async def insert_data(table: str, data: dict):
     if not is_valid_table(table):
         return {"status": "error", "message": "Tabla no válida."}
 
     response = supabase.table(table).insert(data).execute()
 
-    if response.error:
+    print("Response:", response)
+
+    if response.data is None:
         return {
             "status": "error",
-            "message": response.error['message'],
+            "message": "Error al ejecutar la consulta.",
+            "details": response.error
         }
 
     return {
         "status": "success",
         "data": response.data
     }
+
 
 async def update_data(table: str, data: dict, column: str, value: str):
     if not is_valid_table(table):
@@ -148,30 +160,11 @@ async def update_data(table: str, data: dict, column: str, value: str):
 
     response = supabase.table(table).update(data).eq(column, value).execute()
 
-    if response.error:
+    if response.data is None:
         return {
             "status": "error",
-            "message": response.error['message'],
-        }
-
-    return {
-        "status": "success",
-        "data": response.data
-    }
-
-async def delete_data(table: str, column: str, value: str):
-    if not is_valid_table(table):
-        return {"status": "error", "message": "Tabla no válida."}
-
-    if not is_valid_column(table, column):
-        return {"status": "error", "message": "Columna no válida."}
-
-    response = supabase.table(table).delete().eq(column, value).execute()
-
-    if response.error:
-        return {
-            "status": "error",
-            "message": response.error['message'],
+            "message": "Error al ejecutar la consulta.",
+            "details": response.error
         }
 
     return {
