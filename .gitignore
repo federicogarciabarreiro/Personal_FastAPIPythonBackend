@@ -320,6 +320,10 @@ paket-files/
 # FAKE - F# Make
 .fake/
 
+#Variables del entorno
+.env
+/venv
+
 # CodeRush personal settings
 .cr/personal
 
