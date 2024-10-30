@@ -1,8 +1,6 @@
 import re
 import logging
-from supabase import Client
 from .database import supabase
-from .models import User
 from gotrue.errors import AuthRetryableError, AuthApiError
 from .db_config import is_valid_table, is_valid_column
 

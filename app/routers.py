@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException
-from .models import User
-from .services import register_user, login_user, insert_data, select_data, update_data
-from .db_config import is_data_valid
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from .models import UserLogin, UserRegister, InsertRequestModel, UpdateRequestModel, SelectRequestModel
+from .services import register_user, login_user, insert_data, select_data, update_data
+from .db_config import is_data_valid, is_valid_table, is_valid_column
 
 router = APIRouter()
 
 @router.post("/auth/register")
-async def register(user: User):
+async def register(user: UserRegister):
     response = await register_user(user.email, user.password, user.user_name)
 
     if "error" in response:
@@ -16,7 +16,7 @@ async def register(user: User):
     return JSONResponse(status_code=201, content=response)
 
 @router.post("/auth/login")
-async def login(user: User):
+async def login(user: UserLogin):
     response = await login_user(user.email, user.password)
 
     if "error" in response:
@@ -24,29 +24,49 @@ async def login(user: User):
 
     return JSONResponse(status_code=200, content=response)
 
-@router.get("/data/select")
-async def select_data_route(table: str, column: str, value: str):
-    response = await select_data(table, column, value)
-
-    if response["status"] == "error":
-        raise HTTPException(status_code=500, detail=response["message"])
-
-    return JSONResponse(status_code=200, content=response["data"])
-
 @router.post("/data/insert")
-async def insert_data_route(table: str, data: dict):
+async def insert_data_route(request_data: InsertRequestModel):
+    table = request_data.table
+    data = request_data.data
+
+    if not is_valid_table(table) or not is_data_valid(table, data):
+        raise HTTPException(status_code=400, detail="Tabla o datos inválidos.")
+
     response = await insert_data(table, data)
     if response["status"] == "error":
         raise HTTPException(status_code=400, detail=response["message"])
+
     return JSONResponse(status_code=201, content=response["data"])
 
+
 @router.put("/data/update")
-async def update_data_route(table: str, data: dict, column: str, value: str):
-    if not is_data_valid(table, data):
-        raise HTTPException(status_code=400, detail="Datos no válidos.")
+async def update_data_route(request_data: UpdateRequestModel):
+    table = request_data.table
+    data = request_data.data
+    column = request_data.column
+    value = request_data.value
+
+    if not is_valid_table(table) or not is_data_valid(table, data):
+        raise HTTPException(status_code=400, detail="Tabla o datos inválidos.")
 
     response = await update_data(table, data, column, value)
     if response["status"] == "error":
         raise HTTPException(status_code=400, detail=response["message"])
     
+    return JSONResponse(status_code=200, content=response["data"])
+
+
+@router.get("/data/select")
+async def select_data_route(request_data: SelectRequestModel = Depends()):
+    table = request_data.table
+    column = request_data.column
+    value = request_data.value
+
+    if not is_valid_table(table) or not is_valid_column(table, column):
+        raise HTTPException(status_code=400, detail="Tabla o columna inválidas.")
+
+    response = await select_data(table, column, value)
+    if response["status"] == "error":
+        raise HTTPException(status_code=500, detail=response["message"])
+
     return JSONResponse(status_code=200, content=response["data"])
