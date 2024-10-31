@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from .models import UserLogin, UserRegister, InsertRequestModel, UpdateRequestModel, SelectRequestModel
-from .services import register_user, login_user, insert_data, select_data, update_data
+from .services import register_user, login_user, insert_data, select_data, update_data, get_top_scores_data
 from .db_config import is_data_valid, is_valid_table, is_valid_column
 
 router = APIRouter()
@@ -66,6 +66,16 @@ async def select_data_route(request_data: SelectRequestModel = Depends()):
         raise HTTPException(status_code=400, detail="Tabla o columna inválidas.")
 
     response = await select_data(table, column, value)
+    if response["status"] == "error":
+        raise HTTPException(status_code=500, detail=response["message"])
+
+    return JSONResponse(status_code=200, content=response["data"])
+
+
+@router.get("/scores/top")
+async def get_top_scores_route(game_name: str):
+    response = await get_top_scores_data(game_name)
+
     if response["status"] == "error":
         raise HTTPException(status_code=500, detail=response["message"])
 

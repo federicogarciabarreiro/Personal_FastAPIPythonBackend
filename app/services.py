@@ -170,3 +170,41 @@ async def update_data(table: str, data: dict, column: str, value: str):
         "status": "success",
         "data": response.data
     }
+
+
+async def get_top_scores_data(game_name: str, limit: int = 10):
+    game_response = supabase.table("games").select("game_id").eq("game_name", game_name).execute()
+
+    if game_response.data is None or len(game_response.data) == 0:
+        return {
+            "status": "error",
+            "message": "Juego no encontrado.",
+            "details": game_response.error
+        }
+
+    game_id = game_response.data[0]["game_id"]
+
+    sessions_response = supabase.table("games_sessions").select("session_id").eq("game_id", game_id).execute()
+
+    if sessions_response.data is None:
+        return {
+            "status": "error",
+            "message": "No se encontraron sesiones para el juego.",
+            "details": sessions_response.error
+        }
+
+    session_ids = [session["session_id"] for session in sessions_response.data]
+
+    scores_response = supabase.table("sessions_scores").select("*").in_("session_id", session_ids).order("score_id", desc=True).limit(limit).execute()
+
+    if scores_response.data is None:
+        return {
+            "status": "error",
+            "message": "Error al ejecutar la consulta de puntajes.",
+            "details": scores_response.error
+        }
+
+    return {
+        "status": "success",
+        "data": scores_response.data
+    }
