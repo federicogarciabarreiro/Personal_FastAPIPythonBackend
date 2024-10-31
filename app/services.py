@@ -173,38 +173,75 @@ async def update_data(table: str, data: dict, column: str, value: str):
 
 
 async def get_top_scores_data(game_name: str, limit: int = 10):
-    game_response = supabase.table("games").select("game_id").eq("game_name", game_name).execute()
+    try:
+        game_response = supabase.table("games").select("game_id").eq("game_name", game_name).execute()
+        print("game_response:", game_response)
 
-    if game_response.data is None or len(game_response.data) == 0:
+        if not game_response.data:
+            return {
+                "status": "error",
+                "message": "Juego no encontrado.",
+                "details": "No se encontró un juego con el nombre proporcionado."
+            }
+
+        game_id = game_response.data[0]["game_id"]
+
+        sessions_response = supabase.table("games_sessions").select("session_id").eq("game_id", game_id).execute()
+        print("sessions_response:", sessions_response)
+
+        if not sessions_response.data:
+            return {
+                "status": "error",
+                "message": "No se encontraron sesiones para el juego.",
+                "details": "No hay sesiones asociadas con este juego."
+            }
+
+        session_ids = [session["session_id"] for session in sessions_response.data]
+        print("session_ids:", session_ids)
+
+        if not session_ids:
+            return {
+                "status": "error",
+                "message": "No hay sesiones válidas para los puntajes."
+            }
+
+        scores_sessions_response = supabase.table("sessions_scores").select("score_id").in_("session_id", session_ids).execute()
+        print("scores_sessions_response:", scores_sessions_response)
+
+        if not scores_sessions_response.data:
+            return {
+                "status": "error",
+                "message": "No se encontraron puntajes para las sesiones.",
+                "details": "No hay puntajes asociados con las sesiones encontradas."
+            }
+
+        score_ids = [score["score_id"] for score in scores_sessions_response.data]
+
+        scores_response = supabase.table("scores").select("score_value", "score_name").in_("score_id", score_ids).order("score_value", desc=True).limit(limit).execute()
+        print("scores_response:", scores_response)
+
+        if not scores_response.data:
+            return {
+                "status": "error",
+                "message": "No se encontraron puntajes.",
+                "details": "No hay puntajes disponibles para los IDs proporcionados."
+            }
+
+        ranked_scores = [
+            {"position": idx + 1, "score_value": score["score_value"], "score_name": score["score_name"]}
+            for idx, score in enumerate(scores_response.data)
+        ]
+        print("ranked_scores:", ranked_scores)
+
         return {
-            "status": "error",
-            "message": "Juego no encontrado.",
-            "details": game_response.error
+            "status": "success",
+            "data": ranked_scores
         }
 
-    game_id = game_response.data[0]["game_id"]
-
-    sessions_response = supabase.table("games_sessions").select("session_id").eq("game_id", game_id).execute()
-
-    if sessions_response.data is None:
+    except Exception as e:
+        print("Exception:", str(e))
         return {
             "status": "error",
-            "message": "No se encontraron sesiones para el juego.",
-            "details": sessions_response.error
+            "message": "Se produjo un error en la consulta.",
+            "details": str(e)
         }
-
-    session_ids = [session["session_id"] for session in sessions_response.data]
-
-    scores_response = supabase.table("sessions_scores").select("*").in_("session_id", session_ids).order("score_id", desc=True).limit(limit).execute()
-
-    if scores_response.data is None:
-        return {
-            "status": "error",
-            "message": "Error al ejecutar la consulta de puntajes.",
-            "details": scores_response.error
-        }
-
-    return {
-        "status": "success",
-        "data": scores_response.data
-    }
