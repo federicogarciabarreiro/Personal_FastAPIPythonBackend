@@ -4,3 +4,4 @@ python-dotenv
 supabase
 gotrue
 pydantic
+apscheduler

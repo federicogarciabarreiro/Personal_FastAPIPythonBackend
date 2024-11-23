@@ -7,7 +7,8 @@ valid_tables = {
     'sessions_actions': ['session_id', 'action_id', 'created_at'],
     'sessions_scores': ['session_id', 'score_id', 'created_at'],
     'users': ['user_id', 'user_name', 'user_email', 'created_at'],
-    'users_sessions': ['user_id', 'session_id', 'created_at']
+    'users_sessions': ['user_id', 'session_id', 'created_at'],
+    'keep_alive': ['keep_id', 'created_at']
 }
 
 def is_valid_table(table: str) -> bool:

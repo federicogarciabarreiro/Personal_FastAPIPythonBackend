@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from .models import UserLogin, UserRegister, InsertRequestModel, UpdateRequestModel, SelectRequestModel
-from .services import register_user, login_user, insert_data, select_data, update_data, get_top_scores_data
+from .services import register_user, login_user, insert_data, select_data, update_data, get_top_scores_data, insert_keep_alive
 from .db_config import is_data_valid, is_valid_table, is_valid_column
 
 router = APIRouter()
@@ -80,3 +80,11 @@ async def get_top_scores_route(game_name: str):
         raise HTTPException(status_code=500, detail=response["message"])
 
     return JSONResponse(status_code=200, content=response["data"])
+
+
+@router.post("/keep_alive")
+async def keep_alive():
+    response = await insert_keep_alive()
+    if response["status"] == "error":
+        raise HTTPException(status_code=500, detail=response["message"])
+    return response

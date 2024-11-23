@@ -245,3 +245,25 @@ async def get_top_scores_data(game_name: str, limit: int = 10):
             "message": "Se produjo un error en la consulta.",
             "details": str(e)
         }
+
+
+async def insert_keep_alive():
+    table = "keep_alive"
+    
+    data = {}
+
+    response = await insert_data(table, data)
+
+    if response["status"] == "error":
+        logging.error(f"Error al ejecutar el keep-alive: {response.get('message', 'Desconocido')}")
+        return {
+            "status": "error",
+            "message": f"Error al ejecutar el keep-alive: {response.get('message', 'Desconocido')}",
+            "details": response.get("details", "Sin detalles.")
+        }
+
+    logging.info("Keep-alive ejecutado correctamente.")
+    return {
+        "status": "success",
+        "message": "Keep-alive ejecutado correctamente."
+    }
