@@ -2,7 +2,7 @@ name: Keep Alive
 
 on:
   schedule:
-    - cron: '10 15 * * *'
+    - cron: '10 16 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Realizar peticion HTTP al endpoint de Keep Alive
         run: |
-          curl -X GET "https://fast-api-python-backend-one.vercel.app/keep_alive"
+          curl -X POST "https://fast-api-python-backend-one.vercel.app/keep_alive"
