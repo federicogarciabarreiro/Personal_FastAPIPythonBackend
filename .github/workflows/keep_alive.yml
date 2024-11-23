@@ -2,7 +2,7 @@ name: Keep Alive
 
 on:
   schedule:
-    - cron: '5 15 * * *'
+    - cron: '10 15 * * *'
   workflow_dispatch:
 
 jobs:
