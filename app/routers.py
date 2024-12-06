@@ -1,9 +1,10 @@
+import os
+from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from .models import UserLogin, UserRegister, InsertRequestModel, UpdateRequestModel, SelectRequestModel
 from .services import register_user, login_user, insert_data, select_data, update_data, get_top_scores_data, insert_keep_alive
 from .db_config import is_data_valid, is_valid_table, is_valid_column
-
 router = APIRouter()
 
 @router.post("/auth/register")
@@ -84,7 +85,20 @@ async def get_top_scores_route(game_name: str):
 
 @router.post("/keep_alive")
 async def keep_alive():
+    login_response = await login_user(
+        email=os.getenv("KEEP_ALIVE_USER"), 
+        password=os.getenv("KEEP_ALIVE_PASSWORD")
+    )
+    
+    if "error" in login_response:
+        raise HTTPException(status_code=500, detail=login_response["error"])
+    
     response = await insert_keep_alive()
     if response["status"] == "error":
         raise HTTPException(status_code=500, detail=response["message"])
-    return response
+    
+    return {
+        "status": "success",
+        "message": "Keep-alive ejecutado correctamente.",
+        "login": login_response
+    }
